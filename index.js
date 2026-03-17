@@ -23,41 +23,39 @@ app.post('/api/pix', async (req, res) => {
     }
 });
 // Nova rota para processar Cartão de Crédito e Google Pay
+// Nova rota para processar Cartão de Crédito e Google Pay
 app.post('/api/card-payment', async (req, res) => {
     try {
         const idempotencyKey = req.headers['x-idempotency-key'];
         
-        // Aqui você usa o ACCESS TOKEN longo (diferente da Public Key curta usada no HTML)
+        // Aqui você usa o ACCESS TOKEN longo
         const ACCESS_TOKEN = "APP_USR-3478251805917405-113012-8a001e2379be2d06e2d9e34a2d62801f-569702663"; 
+        
+        // Usamos o próprio SDK do Mercado Pago (igual fizemos no Pix)
+        const client = new MercadoPagoConfig({ accessToken: ACCESS_TOKEN });
+        const payment = new Payment(client);
 
-        const paymentData = {
-            transaction_amount: req.body.transaction_amount,
-            token: req.body.token,
-            description: req.body.description,
-            installments: req.body.installments,
-            payment_method_id: req.body.payment_method_id,
-            issuer_id: req.body.issuer_id,
-            payer: req.body.payer
-        };
-
-        const response = await fetch("https://api.mercadopago.com/v1/payments", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${ACCESS_TOKEN}`,
-                "X-Idempotency-Key": idempotencyKey
+        const result = await payment.create({
+            body: {
+                transaction_amount: req.body.transaction_amount,
+                token: req.body.token,
+                description: req.body.description,
+                installments: req.body.installments,
+                payment_method_id: req.body.payment_method_id,
+                issuer_id: req.body.issuer_id,
+                payer: req.body.payer
             },
-            body: JSON.stringify(paymentData)
+            requestOptions: {
+                idempotencyKey: idempotencyKey
+            }
         });
 
-        const data = await response.json();
-
         // O Mercado Pago retorna 'approved' ou 'in_process' se deu certo
-        if (data.status === "approved" || data.status === "in_process") {
-            res.status(200).json({ status: data.status, id: data.id });
+        if (result.status === "approved" || result.status === "in_process") {
+            res.status(200).json({ status: result.status, id: result.id });
         } else {
             // Se recusar (saldo insuficiente, bloqueio de segurança, etc)
-            res.status(400).json({ status: data.status, message: data.status_detail });
+            res.status(400).json({ status: result.status, message: result.status_detail });
         }
     } catch (error) {
         console.error("Erro no pagamento com cartão:", error);
