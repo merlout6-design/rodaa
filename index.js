@@ -6,33 +6,33 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Rota para testar se está online
+// Rota base para testar
 app.get('/', (req, res) => res.send('API Fritzza rodando! 🍕'));
 
-// Rota para gerar o Pix
+// 1. Rota para GERAR o Pix (POST)
 app.post('/api/pix', async (req, res) => {
     try {
-        // O Render vai ler o seu token que vamos configurar no próximo passo
         const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
         const payment = new Payment(client);
-
+        
         const result = await payment.create({ body: req.body });
         res.status(200).json(result);
     } catch (error) {
-        console.error("Erro:", error);
+        console.error("Erro ao gerar:", error);
         res.status(500).json({ error: "Falha ao gerar Pix" });
     }
-// Rota para consultar o status de um pagamento
+});
+
+// 2. Rota para CONSULTAR o status do Pix (GET) -> Isso resolve o erro 404!
 app.get('/api/pix/:id', async (req, res) => {
     try {
         const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN });
         const payment = new Payment(client);
         
-        // Busca o pagamento pelo ID no Mercado Pago
         const result = await payment.get({ id: req.params.id });
         res.status(200).json(result);
     } catch (error) {
-        console.error("Erro ao consultar Pix:", error);
+        console.error("Erro ao consultar:", error);
         res.status(500).json({ error: "Falha ao consultar pagamento" });
     }
 });
