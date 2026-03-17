@@ -35,6 +35,20 @@ app.get('/api/pix/:id', async (req, res) => {
         console.error("Erro ao consultar:", error);
         res.status(500).json({ error: "Falha ao consultar pagamento" });
     }
+// Rota de "Despertador" para o UptimeRobot não deixar o Render dormir
+app.get('/api/ping', (req, res) => {
+    // Pega a data e hora atual no fuso de Brasília para facilitar o log
+    const dataAtual = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    
+    // Imprime no painel do Render só para você ter certeza que está funcionando
+    console.log(`[ALERTA] UptimeRobot pingou o servidor às ${dataAtual}`);
+    
+    // Devolve um status 200 (OK) para o UptimeRobot não registrar queda
+    res.status(200).json({ 
+        status: 'online', 
+        message: 'A API da Fritzza está acordada e pronta para vender!',
+        time: dataAtual
+    });
 });
 
 const PORT = process.env.PORT || 3000;
