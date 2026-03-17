@@ -94,4 +94,39 @@ app.get('/api/ping', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+// --- SISTEMA DE VISITANTES ONLINE (ALTA PRECISÃO) ---
+const activeUsers = new Map();
+const TEMPO_EXPIRACAO = 60 * 1000; // Expirar em 30 segundos sem sinal
+
+// Vassoura: Limpa a memória a cada 10 segundos
+setInterval(() => {
+    const agora = Date.now();
+    for (const [uid, lastSeen] of activeUsers.entries()) {
+        if (agora - lastSeen > TEMPO_EXPIRACAO) {
+            activeUsers.delete(uid); // Caiu a conexão ou fechou sem avisar
+        }
+    }
+}, 20000);
+
+// Cliente avisa que está online
+app.post('/api/presence', (req, res) => {
+    const { uid } = req.body;
+    if (uid) activeUsers.set(uid, Date.now());
+    res.status(200).send({ success: true });
+});
+
+// Cliente avisa IMEDIATAMENTE que fechou/minimizou o site
+app.post('/api/presence/leave', (req, res) => {
+    const { uid } = req.body;
+    if (uid) activeUsers.delete(uid);
+    res.status(200).send({ success: true });
+});
+
+// Painel consulta o número real
+app.get('/api/presence', (req, res) => {
+    // Como a "vassoura" já limpa quem passou de 30s e a rota /leave tira quem saiu,
+    // o tamanho do Map é exatamente a quantidade de pessoas ativas agora.
+    res.status(200).json({ count: activeUsers.size });
+});
+// ------------------------------------
 app.listen(PORT, () => console.log(`Rodando na porta ${PORT}`));
