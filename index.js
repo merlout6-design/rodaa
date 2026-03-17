@@ -35,6 +35,8 @@ app.get('/api/pix/:id', async (req, res) => {
         console.error("Erro ao consultar:", error);
         res.status(500).json({ error: "Falha ao consultar pagamento" });
     }
+}); // <-- O erro estava aqui! Faltava esse fechamento.
+
 // Rota de "Despertador" para o UptimeRobot não deixar o Render dormir
 app.get('/api/ping', (req, res) => {
     // Pega a data e hora atual no fuso de Brasília para facilitar o log
